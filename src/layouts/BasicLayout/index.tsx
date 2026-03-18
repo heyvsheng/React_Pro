@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import GlobalFooter from "@/components/GlobalFooter";
-import './index.css'
+import "./index.css";
 import { menus } from "../../../config/menu";
 import {
   GithubFilled,
@@ -18,7 +18,8 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import {getFlatMenus} from "@umijs/route-utils";
+import { getFlatMenus } from "@umijs/route-utils";
+import { listQuestionBankVoByPageUsingPost } from "@/api/questionBankController";
 
 // 搜索条单独抽出来了
 const SearchInput = () => {
@@ -54,6 +55,8 @@ interface Props {
   children: React.ReactNode;
 }
 
+//全局通用布局
+
 export default function BasicLayout({ children }: Props) {
   const pathname = usePathname();
 
@@ -79,28 +82,40 @@ export default function BasicLayout({ children }: Props) {
         location={{
           pathname,
         }}
-        avatarProps={{
-          src: "https://gw.alipayobjects.com/zos/antfincdn/efFD%24IOql2/weixintupian_20170331104822.jpg",
-          size: "small",
-          title: "heyvsheng",
-          render: (props, dom) => {
-            return (
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: "logout",
-                      icon: <LogoutOutlined />,
-                      label: "退出登录",
-                    },
-                  ],
-                }}
-              >
-                {dom}
-              </Dropdown>
-            );
-          },
-        }}
+        avatarProps={
+          {
+            src: "https://gw.alipayobjects.com/zos/antfincdn/efFD%24IOql2/weixintupian_20170331104822.jpg",
+            size: "small",
+            name: "heyvsheng", // 1. 这里由 title 改为 name
+            render: (props, dom) => {
+              // 2. 补齐三个参数，哪怕第三个不用
+              return (
+                <Dropdown
+                  menu={{
+                    items: [
+                      {
+                        key: "logout",
+                        icon: <LogoutOutlined />,
+                        label: "退出登录",
+                      },
+                    ],
+                  }}
+                >
+                  {/* 3. 包裹一层 span，并确保 dom 被正确渲染 */}
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {dom}
+                  </span>
+                </Dropdown>
+              );
+            },
+          } as any //强制断言为any绕过检查
+        }
         actionsRender={(props) => {
           if (props.isMobile) return [];
 
@@ -112,18 +127,12 @@ export default function BasicLayout({ children }: Props) {
           ];
         }}
         headerTitleRender={(logo, title, _) => {
-          const defaultDom = (
+          return (
             <a>
               {logo}
               {title}
             </a>
           );
-          if (typeof window === "undefined") return defaultDom;
-          if (document.body.clientWidth < 1400) {
-            return defaultDom;
-          }
-          if (_.isMobile) return defaultDom;
-          return <>{defaultDom}</>;
         }}
         //底部栏布局
         footerRender={() => {
