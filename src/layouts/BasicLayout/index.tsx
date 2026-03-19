@@ -20,6 +20,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getFlatMenus } from "@umijs/route-utils";
 import { listQuestionBankVoByPageUsingPost } from "@/api/questionBankController";
+import { useSelector } from "react-redux";
+import { RootState } from "@/stores";
 
 // 搜索条单独抽出来了
 const SearchInput = () => {
@@ -60,6 +62,8 @@ interface Props {
 export default function BasicLayout({ children }: Props) {
   const pathname = usePathname();
 
+  const loginUser = useSelector((state: RootState) => state.loginUser);
+
   return (
     <div
       id="basicLayout"
@@ -84,11 +88,10 @@ export default function BasicLayout({ children }: Props) {
         }}
         avatarProps={
           {
-            src: "https://gw.alipayobjects.com/zos/antfincdn/efFD%24IOql2/weixintupian_20170331104822.jpg",
+            src: loginUser.userAvatar || "/assets/logo.png",
             size: "small",
-            name: "heyvsheng", // 1. 这里由 title 改为 name
+            title: loginUser.userName || "heyvsheng",
             render: (props, dom) => {
-              // 2. 补齐三个参数，哪怕第三个不用
               return (
                 <Dropdown
                   menu={{
