@@ -4,9 +4,12 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import "./globals.css";
 import BasicLayout from "@/layouts/BasicLayout";
 import React, { useCallback, useEffect } from "react";
-import store, { AppDispatch } from "@/stores";
-import { Provider, useDispatch } from "react-redux";
+import { Provider } from "react-redux";
 import { getLoginUserUsingGet } from "@/api/userController";
+import AccessLayout from "@/access/AccessLayout";
+import { useDispatch } from "react-redux";
+import store, { AppDispatch } from "@/stores";
+import { setLoginUser } from "@/stores/LoginUser";
 
 //全局初始化逻辑
 const InitLayout: React.FC<
@@ -14,12 +17,13 @@ const InitLayout: React.FC<
     children: React.ReactNode;
   }>
 > = ({ children }) => {
-  const dispatch = -useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   //初始化全局用户状态
-  const doInitLoginUser = useCallback(() => {
+  const doInitLoginUser = useCallback(async () => {
     const res = await getLoginUserUsingGet();
     if (res.data) {
       //更新全局用户状态
+      dispatch(setLoginUser(res.data));
     } else {
     }
   }, []);
@@ -42,7 +46,9 @@ export default function RootLayout({
         <AntdRegistry>
           <Provider store={store}>
             <InitLayout>
-              <BasicLayout>{children}</BasicLayout>
+              <BasicLayout>
+                <AccessLayout>{children}</AccessLayout>
+              </BasicLayout>
             </InitLayout>
           </Provider>
         </AntdRegistry>

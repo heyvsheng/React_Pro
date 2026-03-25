@@ -1,28 +1,30 @@
 "use client";
-import { useEffect } from "react";
+import React, { useState } from "react";
 import GlobalFooter from "@/components/GlobalFooter";
 import "./index.css";
 import { menus } from "../../../config/menu";
 import {
   GithubFilled,
-  InfoCircleFilled,
   LogoutOutlined,
-  PlusCircleFilled,
-  QuestionCircleFilled,
   SearchOutlined,
 } from "@ant-design/icons";
-import type { ProSettings } from "@ant-design/pro-components";
 import { ProLayout } from "@ant-design/pro-components";
-import { Dropdown, Input, theme } from "antd";
-import React, { useState } from "react";
+import { Dropdown, Input, message, theme } from "antd";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getFlatMenus } from "@umijs/route-utils";
-import { listQuestionBankVoByPageUsingPost } from "@/api/questionBankController";
-import { useSelector } from "react-redux";
-import { RootState } from "@/stores";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/stores";
+import getAccessibleMenus from "@/access/menuAccess";
+import { userLoginUsingPost, userLogoutUsingPost } from "@/api/userController";
+import { setLoginUser } from "@/stores/LoginUser";
+import { router } from "next/client";
+import { DEFAULT_USER } from "@/constants/user";
 
+/**
+ * 导航栏
+ * @constructor
+ */
 // 搜索条单独抽出来了
 const SearchInput = () => {
   const { token } = theme.useToken();
@@ -57,12 +59,35 @@ interface Props {
   children: React.ReactNode;
 }
 
-//全局通用布局
+/**
+ * 全局通用布局  导航栏下面的页面都在这里
+ * @param children
+ * @constructor
+ */
 
 export default function BasicLayout({ children }: Props) {
   const pathname = usePathname();
 
   const loginUser = useSelector((state: RootState) => state.loginUser);
+
+  const dispatch = useDispatch<AppDispatch>();
+
+  const [text, setText] = useState<string>(); //默认空字符串
+  const router = useRouter();
+
+  /**
+   * 退出登录  把登录态取消掉就好了
+   */
+  const userLogout = async () => {
+    try {
+      await userLogoutUsingPost();
+      message.success("已退出登录");
+      dispatch(setLoginUser(DEFAULT_USER));
+      router.push("/user/login");
+    } catch (e) {
+      message.error("操作失败" + e.message);
+    }
+  };
 
   return (
     <div
@@ -73,14 +98,14 @@ export default function BasicLayout({ children }: Props) {
       }}
     >
       <ProLayout
-        title="面试鸭"
+        title="面试鼠"
         layout="top"
         logo={
           <Image
             src="/assets/logo.png"
             height={32}
             width={32}
-            alt="面试鸭刷题网站"
+            alt="面试鼠刷题网站"
           />
         }
         location={{
@@ -92,6 +117,16 @@ export default function BasicLayout({ children }: Props) {
             size: "small",
             title: loginUser.userName || "heyvsheng",
             render: (props, dom) => {
+              if (!loginUser.id) {
+                return;
+                <div
+                  onClick={() => {
+                    router.push("/user/login");
+                  }}
+                >
+                  {dom}
+                </div>;
+              }
               return (
                 <Dropdown
                   menu={{
@@ -102,9 +137,14 @@ export default function BasicLayout({ children }: Props) {
                         label: "退出登录",
                       },
                     ],
+                    onClick: async (event: { key: React.Key }) => {
+                      const { key } = event;
+                      if (key === "logout") {
+                        userLogout();
+                      }
+                    },
                   }}
                 >
-                  {/* 3. 包裹一层 span，并确保 dom 被正确渲染 */}
                   <span
                     style={{
                       display: "flex",
@@ -144,7 +184,7 @@ export default function BasicLayout({ children }: Props) {
         onMenuHeaderClick={(e) => console.log(e)}
         // 定义有哪些菜单
         menuDataRender={() => {
-          return menus;
+          return getAccessibleMenus(loginUser, menus);
         }}
         //定义了菜单项如何渲染
         menuItemRender={(item, dom) => (
